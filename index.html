@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Douay-Rheims Daily Reading Plan</title>
+    <meta name="description" content="Daily Torah, Old Testament, Gospel, New Testament readings + Psalms of the Hours with Douay-Rheims text and audio links."/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="bg-neutral-50 text-neutral-900">
+    <div id="app"></div>
+    <script type="text/babel">
+      const { useMemo, useState, useEffect } = React;
+
+      const TORAH = [
+        { name: "Genesis", chapters: 50 },
+        { name: "Exodus", chapters: 40 },
+        { name: "Leviticus", chapters: 27 },
+        { name: "Numbers", chapters: 36 },
+        { name: "Deuteronomy", chapters: 34 },
+      ];
+      const OT_HISTORY_WISDOM = [
+        { name: "Joshua", chapters: 24 },{ name: "Judges", chapters: 21 },{ name: "Ruth", chapters: 4 },
+        { name: "1 Samuel", chapters: 31 },{ name: "2 Samuel", chapters: 24 },{ name: "1 Kings", chapters: 22 },
+        { name: "2 Kings", chapters: 25 },{ name: "1 Chronicles", chapters: 29 },{ name: "2 Chronicles", chapters: 36 },
+        { name: "Ezra", chapters: 10 },{ name: "Nehemiah", chapters: 13 },{ name: "Tobit", chapters: 14 },
+        { name: "Judith", chapters: 16 },{ name: "Esther", chapters: 16 },{ name: "1 Maccabees", chapters: 16 },
+        { name: "2 Maccabees", chapters: 15 },{ name: "Job", chapters: 42 },{ name: "Proverbs", chapters: 31 },
+        { name: "Ecclesiastes", chapters: 12 },{ name: "Song of Solomon", chapters: 8 },{ name: "Wisdom", chapters: 19 },
+        { name: "Sirach", chapters: 51 },
+      ];
+      const OT_PROPHETS = [
+        { name: "Isaiah", chapters: 66 },{ name: "Jeremiah", chapters: 52 },{ name: "Lamentations", chapters: 5 },
+        { name: "Baruch", chapters: 6 },{ name: "Ezekiel", chapters: 48 },{ name: "Daniel", chapters: 14 },
+        { name: "Hosea", chapters: 14 },{ name: "Joel", chapters: 3 },{ name: "Amos", chapters: 9 },
+        { name: "Obadiah", chapters: 1 },{ name: "Jonah", chapters: 4 },{ name: "Micah", chapters: 7 },
+        { name: "Nahum", chapters: 3 },{ name: "Habakkuk", chapters: 3 },{ name: "Zephaniah", chapters: 3 },
+        { name: "Haggai", chapters: 2 },{ name: "Zechariah", chapters: 14 },{ name: "Malachi", chapters: 4 },
+      ];
+      const GOSPELS = [
+        { name: "Matthew", chapters: 28 },{ name: "Mark", chapters: 16 },{ name: "Luke", chapters: 24 },{ name: "John", chapters: 21 },
+      ];
+      const NT_REST = [
+        { name: "Acts", chapters: 28 },{ name: "Romans", chapters: 16 },{ name: "1 Corinthians", chapters: 16 },
+        { name: "2 Corinthians", chapters: 13 },{ name: "Galatians", chapters: 6 },{ name: "Ephesians", chapters: 6 },
+        { name: "Philippians", chapters: 4 },{ name: "Colossians", chapters: 4 },{ name: "1 Thessalonians", chapters: 5 },
+        { name: "2 Thessalonians", chapters: 3 },{ name: "1 Timothy", chapters: 6 },{ name: "2 Timothy", chapters: 4 },
+        { name: "Titus", chapters: 3 },{ name: "Philemon", chapters: 1 },{ name: "Hebrews", chapters: 13 },
+        { name: "James", chapters: 5 },{ name: "1 Peter", chapters: 5 },{ name: "2 Peter", chapters: 3 },
+        { name: "1 John", chapters: 5 },{ name: "2 John", chapters: 1 },{ name: "3 John", chapters: 1 },
+        { name: "Jude", chapters: 1 },{ name: "Revelation", chapters: 22 },
+      ];
+      const HOURS = [
+        { key: "matins", label: "Matins (Matutinum)", hour: 3 },
+        { key: "lauds", label: "Lauds (Laudes)", hour: 6 },
+        { key: "prime", label: "Prime (Prima)", hour: 7 },
+        { key: "terce", label: "Terce (Tertia)", hour: 9 },
+        { key: "sext", label: "Sext", hour: 12 },
+        { key: "none", label: "None (Non)", hour: 15 },
+        { key: "vespers", label: "Vespers", hour: 17 },
+        { key: "compline", label: "Compline (Completorum)", hour: 21 },
+      ];
+
+      // Psalmi playlist
+      const YT_PLAYLIST_ID = "PLTEcFCqHIhTY2KLYghHeg6s-aHK_kASjp";
+      function linkToPsalmYouTube(psNum) {
+        const idx = Math.max(1, Math.min(150, Number(psNum) || 1));
+        return `https://www.youtube.com/playlist?list=${YT_PLAYLIST_ID}&playnext=1&index=${idx}`;
+      }
+
+      function daysSinceJan1(date, timeZone = "America/Chicago") {
+        const fmt = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
+        const parts = fmt.formatToParts(date).reduce((acc, p) => { if (p.type !== "literal") acc[p.type] = p.value; return acc; }, {});
+        const y = Number(parts.year); const m = Number(parts.month); const d = Number(parts.day);
+        const start = new Date(Date.UTC(y, 0, 1));
+        const cur = new Date(Date.UTC(y, m - 1, d));
+        return Math.floor((cur.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+      }
+      function buildCumulative(stream) { const totals = []; let s = 0; for (const b of stream) { s += b.chapters; totals.push(s); } return { totals, sum: s }; }
+      function indexToBookChapter(stream, index) {
+        const { totals, sum } = buildCumulative(stream);
+        const i = ((index % sum) + sum) % sum;
+        let bookIdx = totals.findIndex(t => i < t); if (bookIdx === -1) bookIdx = stream.length - 1;
+        const prevTotal = bookIdx === 0 ? 0 : totals[bookIdx - 1];
+        return { book: stream[bookIdx].name, chapter: i - prevTotal + 1 };
+      }
+      function linkToDRA(book, chapter) { const q = encodeURIComponent(`${book} ${chapter}`); return `https://www.biblegateway.com/passage/?search=${q}&version=DRA`; }
+      function linkToPsalmDRA(psNum) { const q = encodeURIComponent(`Psalm ${psNum}`); return `https://www.biblegateway.com/passage/?search=${q}&version=DRA`; }
+
+      // David Suchet (NIV)
+      const SUCHET_NAME_MAP = { "Song of Solomon": "Song of Songs" };
+      const SUCHET_CANON = new Set([
+        "Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth",
+        "1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah",
+        "Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Songs","Isaiah","Jeremiah",
+        "Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah",
+        "Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi",
+        "Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians",
+        "Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians",
+        "1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter",
+        "1 John","2 John","3 John","Jude","Revelation"
+      ]);
+      function suchetDisplayName(book) { return SUCHET_NAME_MAP[book] || book; }
+      function linkToSuchetChapter(book, chapter) {
+        const name = suchetDisplayName(book);
+        if (!SUCHET_CANON.has(name)) return null;
+        if (name === "Esther" && chapter > 10) return null;
+        if (name === "Daniel" && chapter > 12) return null;
+        const q = encodeURIComponent(`David Suchet ${name} ${chapter}`);
+        return `https://www.youtube.com/results?search_query=${q}`;
+      }
+
+      function formatDateISO(d, tz = "America/Chicago") {
+        const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
+        return fmt.format(d);
+      }
+      function startOfDay(d, tz = "America/Chicago") { const iso = formatDateISO(d, tz); return new Date(iso + "T00:00:00"); }
+      function useChicagoNow() { const [now, setNow] = useState(new Date()); useEffect(() => { const id = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(id); }, []); return now; }
+      function classNames(...c) { return c.filter(Boolean).join(" "); }
+
+      function buildAssignments({ torah, otHistWis, otProphets, gospel, ntRest, dayIndex }) {
+        const psBase = (dayIndex * HOURS.length) % 150;
+        const ps = HOURS.map((_, i) => ((psBase + i) % 150) + 1);
+        return [
+          { key: "matins",   items: [ { kind: "psalm", psalm: ps[0] } ] },
+          { key: "lauds",    items: [ { kind: "reading", title: "Torah", ...torah }, { kind: "reading", title: "OT — History & Wisdom", ...otHistWis }, { kind: "psalm", psalm: ps[1] } ] },
+          { key: "prime",    items: [ { kind: "psalm", psalm: ps[2] } ] },
+          { key: "terce",    items: [ { kind: "reading", title: "OT — Prophets", ...otProphets }, { kind: "psalm", psalm: ps[3] } ] },
+          { key: "sext",     items: [ { kind: "psalm", psalm: ps[4] } ] },
+          { key: "none",     items: [ { kind: "psalm", psalm: ps[5] } ] },
+          { key: "vespers",  items: [ { kind: "reading", title: "Gospel", ...gospel }, { kind: "psalm", psalm: ps[6] } ] },
+          { key: "compline", items: [ { kind: "reading", title: "New Testament — Acts & Epistles", ...ntRest }, { kind: "psalm", psalm: ps[7] } ] },
+        ];
+      }
+
+      function DailyReadingsApp() {
+        const now = useChicagoNow();
+        const [selectedDate, setSelectedDate] = useState(() => now);
+        const tz = "America/Chicago";
+        const dayIndex = useMemo(() => daysSinceJan1(selectedDate, tz), [selectedDate]);
+
+        const torah = useMemo(() => indexToBookChapter(TORAH, dayIndex), [dayIndex]);
+        const otHistWis = useMemo(() => indexToBookChapter(OT_HISTORY_WISDOM, dayIndex), [dayIndex]);
+        const otProphets = useMemo(() => indexToBookChapter(OT_PROPHETS, dayIndex), [dayIndex]);
+        const gospel = useMemo(() => indexToBookChapter(GOSPELS, dayIndex), [dayIndex]);
+        const ntRest = useMemo(() => indexToBookChapter(NT_REST, dayIndex), [dayIndex]);
+
+        const assignments = useMemo(() => buildAssignments({ torah, otHistWis, otProphets, gospel, ntRest, dayIndex }), [torah, otHistWis, otProphets, gospel, ntRest, dayIndex]);
+
+        const todayISO = formatDateISO(now, tz);
+        const selectedISO = formatDateISO(selectedDate, tz);
+        const chicago = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+        const hourNow = chicago.getHours();
+        const currentIndex = HOURS.reduce((acc, cur, i) => (hourNow >= cur.hour ? i : acc), -1);
+
+        return (
+          <div className="min-h-screen p-6">
+            <div className="max-w-6xl mx-auto">
+              <header className="mb-6 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Douay-Rheims Daily Reading Plan</h1>
+                  <p className="text-sm text-neutral-600 mt-1">Organized by the Canonical Hours: Matins • Lauds • Prime • Terce • Sext • None • Vespers • Compline</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input aria-label="Choose date" type="date" className="border rounded-xl px-3 py-2 shadow-sm" value={selectedISO} onChange={(e) => setSelectedDate(new Date(e.target.value + "T12:00:00"))} />
+                  <button className="rounded-xl px-4 py-2 bg-neutral-900 text-white shadow hover:bg-neutral-800" onClick={() => setSelectedDate(startOfDay(now, tz))} aria-label="Jump to today">Today</button>
+                </div>
+              </header>
+
+              <section className="grid lg:grid-cols-2 gap-4">
+                {HOURS.map((h, idx) => {
+                  const slot = assignments.find(a => a.key === h.key);
+                  const isToday = selectedISO === todayISO;
+                  const isActive = isToday && idx === currentIndex;
+                  return (
+                    <div key={h.key} className={["rounded-2xl border p-4 bg-white shadow-sm", isActive ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"].join(" ")}>
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-lg font-semibold">{h.label}</div>
+                        <div className="text-xs text-neutral-500">Suggested ~{String(h.hour).padStart(2,"0")}:00</div>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        {slot.items.map((item, i) => {
+                          if (item.kind === "psalm") {
+                            return (
+                              <div key={i} className="block group">
+                                <div className="rounded-xl border p-3 hover:shadow-sm transition-shadow">
+                                  <div className="text-xs uppercase tracking-wider text-neutral-500">Psalm</div>
+                                  <div className="mt-0.5 text-base font-medium">Psalm {item.psalm}</div>
+                                  <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                                    <a className="underline text-neutral-700 hover:text-neutral-900" href={linkToPsalmDRA(item.psalm)} target="_blank" rel="noreferrer">Bible text (DRA)</a>
+                                    <a className="underline text-neutral-700 hover:text-neutral-900" href={linkToPsalmYouTube(item.psalm)} target="_blank" rel="noreferrer">Latin video (YouTube)</a>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          const suchetUrl = linkToSuchetChapter(item.book, item.chapter);
+                          return (
+                            <div key={i} className="block group">
+                              <div className="rounded-xl border p-3 hover:shadow-sm transition-shadow">
+                                <div className="text-xs uppercase tracking-wider text-neutral-500">{item.title}</div>
+                                <div className="mt-0.5 text-base font-semibold">{item.book} <span className="opacity-70">{item.chapter}</span></div>
+                                <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                                  <a className="underline text-neutral-700 hover:text-neutral-900" href={linkToDRA(item.book, item.chapter)} target="_blank" rel="noreferrer">Bible text (DRA)</a>
+                                  {suchetUrl ? (
+                                    <a className="underline text-neutral-700 hover:text-neutral-900" href={suchetUrl} target="_blank" rel="noreferrer">Listen (David Suchet)</a>
+                                  ) : (
+                                    <span className="text-neutral-400">Suchet audio not available for this chapter</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+
+              <section className="mt-6">
+                <div className="rounded-2xl border bg-white p-4 shadow-sm">
+                  <h3 className="text-base font-semibold">How this is arranged</h3>
+                  <ul className="mt-2 text-sm text-neutral-700 list-disc ml-5 space-y-1">
+                    <li><span className="font-medium">Lauds, Vespers, and Compline</span> include one or two chapter readings plus a psalm (a bit more time).</li>
+                    <li><span className="font-medium">Matins, Prime, Terce, Sext, and None</span> are kept light (usually a single psalm; Terce adds one short reading).</li>
+                    <li>All chapters and psalms are linked to the <span className="font-medium">Douay-Rheims (DRA)</span> text on BibleGateway.</li>
+                    <li>Psalms link to your Latin Psalmi playlist; chapters link to <span className="font-medium">David Suchet (NIV)</span> audio where available.</li>
+                    <li>The plan begins on <span className="font-medium">January 1</span> each year; the date picker lets you preview any day.</li>
+                  </ul>
+                </div>
+              </section>
+
+              <footer className="mt-10 pb-6 text-center text-xs text-neutral-500">
+                Douay-Rheims text courtesy of BibleGateway (public-domain DRA). Listening via David Suchet (NIV) on YouTube. Reading plan generated locally in your browser.
+              </footer>
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("app"));
+      root.render(<DailyReadingsApp />);
+    </script>
+  </body>
+</html>

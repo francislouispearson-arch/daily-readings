@@ -106,9 +106,9 @@
       function suchetDisplayName(book) { return SUCHET_NAME_MAP[book] || book; }
       function linkToSuchetChapter(book, chapter) {
         const name = suchetDisplayName(book);
-        if (!SUCHET_CANON.has(name)) return null;
-        if (name === "Esther" && chapter > 10) return null;
-        if (name === "Daniel" && chapter > 12) return null;
+        //if (!SUCHET_CANON.has(name)) return null;
+        //if (name === "Esther" && chapter > 10) return null;
+        //if (name === "Daniel" && chapter > 12) return null;
         const q = encodeURIComponent(`David Suchet ${name} ${chapter}`);
         return `https://www.youtube.com/results?search_query=${q}`;
       }

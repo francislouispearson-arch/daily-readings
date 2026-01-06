@@ -18,6 +18,12 @@
       // Premium Subscription Management
       const PREMIUM_REQUEST_LIMIT = 100; // Monthly limit for premium requests
       
+      // Helper function to calculate next reset date
+      function getNextResetDate(lastResetISO) {
+        const lastReset = new Date(lastResetISO);
+        return new Date(lastReset.getFullYear(), lastReset.getMonth() + 1, 1);
+      }
+      
       function useSubscription() {
         const [subscription, setSubscription] = useState(() => {
           try {
@@ -229,11 +235,7 @@
                 />
               </div>
               <p className="text-xs text-neutral-500 mt-1">
-                {(() => {
-                  const lastReset = new Date(subscription.lastReset);
-                  const nextReset = new Date(lastReset.getFullYear(), lastReset.getMonth() + 1, 1);
-                  return `Resets on ${nextReset.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
-                })()}
+                Resets on {getNextResetDate(subscription.lastReset).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
               </p>
             </div>
           </div>

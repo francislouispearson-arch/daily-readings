@@ -27,7 +27,9 @@
               // Check if we need to reset monthly counter
               const now = new Date();
               const lastReset = new Date(data.lastReset || now);
-              if (now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+              // Reset if month OR year is different (handles year transitions correctly)
+              const needsReset = now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear();
+              if (needsReset) {
                 data.requestsUsed = 0;
                 data.lastReset = now.toISOString();
               }
@@ -227,7 +229,11 @@
                 />
               </div>
               <p className="text-xs text-neutral-500 mt-1">
-                Resets monthly on {new Date(subscription.lastReset).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                {(() => {
+                  const lastReset = new Date(subscription.lastReset);
+                  const nextReset = new Date(lastReset.getFullYear(), lastReset.getMonth() + 1, 1);
+                  return `Resets on ${nextReset.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+                })()}
               </p>
             </div>
           </div>
@@ -431,8 +437,9 @@
                   <button 
                     onClick={() => {
                       if (subscription.requestsUsed < subscription.requestLimit) {
+                        const newUsage = subscription.requestsUsed + 1;
                         incrementRequests();
-                        alert(`AI Insight generated! This is a demo feature.\n\nYou have used ${subscription.requestsUsed + 1} of ${subscription.requestLimit} premium requests this month.`);
+                        alert(`AI Insight generated! This is a demo feature.\n\nYou have used ${newUsage} of ${subscription.requestLimit} premium requests this month.`);
                       } else {
                         alert('You have reached your premium request limit for this month. Your limit will reset on the 1st of next month.');
                       }
